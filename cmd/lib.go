@@ -2,12 +2,8 @@ package cmd
 
 import (
 	"bufio"
-	"bytes"
-	"crypto/rand"
-	"encoding/base64"
+	"errors"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -15,20 +11,18 @@ import (
 	"strings"
 	"syscall"
 
-	"golang.org/x/crypto/chacha20poly1305"
-
+	"github.com/99designs/keyring"
+	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/zalando/go-keyring"
 )
 
 // TODO: setup debug logging
 // TODO: use XDG config dir
 func filePath(name string) string {
-	dir := viper.GetString("dir")
+	dir := viper.GetString(ChainDirKey)
 	var path string
 
-	// TODO: make this confirm folder exists
 	if dir != "" {
 		path = filepath.Join(dir, name)
 	} else {
@@ -37,91 +31,60 @@ func filePath(name string) string {
 			log.Fatal(err)
 		}
 
-		// TODO pickup here
 		path = filepath.Join(home, dir, name)
 	}
-
-	os.MkdirAll(filepath.Dir(path), 0755)
 
 	return path
 }
 
-var enc = base64.RawURLEncoding
-
-func setupKey() []byte {
-	// TODO: rename to be accurate as USERNAME of Keychain holder
-	service := viper.GetString(KeyringServiceKey)
-	user := viper.GetString(KeyringUserKey)
-
-	skey, err := keyring.Get(service, user)
-	if err != nil {
-		if err != keyring.ErrNotFound {
-			log.Fatal(err)
+func getPassword(_s string) (string, error) {
+	validate := func(input string) error {
+		if len(input) < viper.GetInt(PasswordValidationLength) {
+			return errors.New("password must have more than 20 characters")
 		}
-	} else {
-		key, err := enc.DecodeString(skey)
+		return nil
+	}
+	p := viper.GetString(KeyringPassword)
+	if p == "" {
+		prompt := promptui.Prompt{
+			Label:    "Password",
+			Validate: validate,
+			Mask:     '*',
+		}
+
+		result, err := prompt.Run()
+
 		if err != nil {
-			log.Fatal(err)
+			fmt.Printf("Prompt failed %v\n", err)
+			return "", err
 		}
 
-		return key
+		return result, nil
+	} else {
+		if err := validate(p); err != nil {
+			return "", err
+		} else {
+			return p, nil
+		}
 	}
 
-	// Ok, make a new key
-
-	key := make([]byte, chacha20poly1305.KeySize)
-
-	_, err = io.ReadFull(rand.Reader, key)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = keyring.Set(service, user, enc.EncodeToString(key))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return key
 }
 
-// TODO: does not dedupe values, it appends each value
+// TODO: consider supporting other backends:
+// https://pkg.go.dev/github.com/99designs/keyring#BackendType
+func getKeyring(chain string) (keyring.Keyring, error) {
+	return keyring.Open(keyring.Config{
+		AllowedBackends:  []keyring.BackendType{keyring.FileBackend},
+		ServiceName:      chain,
+		FilePasswordFunc: getPassword,
+		FileDir:          filePath(chain),
+	})
+}
+
 func set(cmd *cobra.Command, chain string) {
-	key := setupKey()
-
-	c, err := chacha20poly1305.New(key)
+	ring, err := getKeyring(chain)
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	path := filePath(chain)
-
-	var data []byte
-
-	f, err := os.Open(path)
-	if err != nil {
-		if !os.IsNotExist(err) {
-			log.Fatal(err)
-		}
-	} else {
-
-		nonce := make([]byte, c.NonceSize())
-
-		_, err = io.ReadFull(f, nonce)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		ciphertext, err := ioutil.ReadAll(f)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		f.Close()
-
-		data, err = c.Open(nil, nonce, ciphertext, nil)
-		if err != nil {
-			log.Fatal(err)
-		}
+		log.Fatalln("Unable to open keyring")
 	}
 
 	br := bufio.NewReader(os.Stdin)
@@ -153,84 +116,72 @@ func set(cmd *cobra.Command, chain string) {
 
 		lineCount += 1
 
-		idx := strings.IndexByte(line, '=')
-		if idx == -1 {
+		key, val, found := strings.Cut(line, "=")
+		if !found {
 			log.Fatalln("Input format must be NAME=VALUE")
 		}
 
-		data = append(data, line...)
-		data = append(data, '\n')
-	}
+		err = ring.Set(keyring.Item{
+			Key:  key,
+			Data: []byte(val),
+		})
 
-	nonce := make([]byte, c.NonceSize())
-
-	_, err = io.ReadFull(rand.Reader, nonce)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	ciphertext := c.Seal(nil, nonce, data, nil)
-
-	err = ioutil.WriteFile(path, append(nonce, ciphertext...), 0600)
-	if err != nil {
-		log.Fatal(err)
+		if err != nil {
+			log.Fatalf("Unable to set key: %+v +%v", key, err)
+		}
 	}
 
 	fmt.Printf("Value(s) saved: %d\n", lineCount)
 }
 
-// TODO: add get-one command?
-func get(cmd *cobra.Command, chain string, command string, commandArgs []string) {
-	key := setupKey()
+func get(cmd *cobra.Command, chain string) {
+	ring, err := getKeyring(chain)
 
-	c, err := chacha20poly1305.New(key)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln("Unable to open keyring")
 	}
 
-	path := filePath(chain)
+	var lines []string
 
-	f, err := os.Open(path)
+	var keys []string
+	keys, err = ring.Keys()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Unable to get keys for keyring\n")
+	}
+	for _, k := range keys {
+		value, err := ring.Get(k)
+		if err != nil {
+			log.Fatalf("Unable to get key: %+v", k)
+		}
+		line := fmt.Sprintf("%s=%s", k, value.Data)
+		lines = append(lines, line)
+	}
+
+	fmt.Println(strings.Join(lines, "\n"))
+}
+
+func execute(cmd *cobra.Command, chain string, command string, commandArgs []string) {
+	ring, err := getKeyring(chain)
+
+	if err != nil {
+		log.Fatalln("Unable to open keyring")
 	}
 
 	env := os.Environ()
 
-	nonce := make([]byte, c.NonceSize())
-
-	_, err = io.ReadFull(f, nonce)
+	var keys []string
+	keys, err = ring.Keys()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Unable to get keys for keyring\n")
 	}
-
-	ciphertext, err := ioutil.ReadAll(f)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	data, err := c.Open(nil, nonce, ciphertext, nil)
-	if err != nil {
-		log.Fatalln("Unable to decrypt chain, perhaps key was changed")
-	}
-
-	br := bufio.NewReader(bytes.NewReader(data))
-
-	for {
-		line, err := br.ReadString('\n')
+	for _, k := range keys {
+		value, err := ring.Get(k)
 		if err != nil {
-			break
+			log.Fatalf("Unable to get key: %+v", k)
 		}
-
-		line = strings.TrimSpace(line)
-
-		idx := strings.IndexByte(line, '=')
-		if idx != -1 {
-			env = append(env, line)
-		}
+		line := fmt.Sprintf("%s=%s", k, value.Data)
+		env = append(env, line)
 	}
-
-	f.Close()
 
 	execpath, err := exec.LookPath(command)
 	if err != nil {
@@ -243,9 +194,4 @@ func get(cmd *cobra.Command, chain string, command string, commandArgs []string)
 	// TODO: use golang helpers for exec
 	err = syscall.Exec(execpath, commandArgs, env)
 	log.Fatal(err)
-}
-
-func export(cmd *cobra.Command, args []string) {
-	key := setupKey()
-	fmt.Println(enc.EncodeToString(key))
 }

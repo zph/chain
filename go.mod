@@ -3,10 +3,10 @@ module github.com/zph/chain
 go 1.13
 
 require (
-	github.com/99designs/keyring v1.2.1 // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/99designs/keyring v1.2.1
+	github.com/godbus/dbus v4.1.0+incompatible // indirect
+	github.com/manifoldco/promptui v0.9.0
+	github.com/sethvargo/go-password v0.2.0
 	github.com/spf13/cobra v1.6.1
-	github.com/spf13/viper v1.14.0 // indirect
-	github.com/zalando/go-keyring v0.0.0-20200121091418-667557018717
-	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e
+	github.com/spf13/viper v1.14.0
 )

@@ -1,5 +1,5 @@
 /*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
+Copyright © 2022 Zander Hill <zander@xargs.io>
 */
 package cmd
 
@@ -10,34 +10,22 @@ import (
 // getCmd represents the get command
 var getCmd = &cobra.Command{
 	Use:   "get [keychain] [execCommand] [execCommandArgs...]",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Fetch keychain values for <keychain>",
+	Long: `
+	Fetch keychain values for <keychain>
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	// TODO: Improve validation https://cobra.dev/#positional-and-custom-arguments
-	Args: cobra.MinimumNArgs(2),
+	eg:
+	# Fetch aws-creds previously set using "chain set aws-creds"
+	chain get aws-creds
+`,
+	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		chain := args[0]
-		command := args[1]
-		commandArgs := args[1:]
 
-		get(cmd, chain, command, commandArgs)
+		get(cmd, chain)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(getCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// getCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// getCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
