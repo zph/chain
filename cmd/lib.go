@@ -15,8 +15,10 @@ import (
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	pb "github.com/zph/chain/gen/proto/go/chain/v1"
 )
 
+chainv1
 // TODO: setup debug logging
 // TODO: use XDG config dir
 func filePath(name string) string {
@@ -72,17 +74,24 @@ func getPassword(_s string) (string, error) {
 
 // TODO: consider supporting other backends:
 // https://pkg.go.dev/github.com/99designs/keyring#BackendType
-func getKeyring(chain string) (keyring.Keyring, error) {
-	return keyring.Open(keyring.Config{
+func NewStandardStore(chain string) (Store, error) {
+	s := StandardStore{}
+	k, err := keyring.Open(keyring.Config{
 		AllowedBackends:  []keyring.BackendType{keyring.FileBackend},
 		ServiceName:      chain,
 		FilePasswordFunc: getPassword,
 		FileDir:          filePath(chain),
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	s.Keyring = k
+	return s, nil
 }
 
 func set(cmd *cobra.Command, chain string) {
-	ring, err := getKeyring(chain)
+	ring, err := NewStandardStore(chain)
 	if err != nil {
 		log.Fatalln("Unable to open keyring")
 	}
@@ -135,7 +144,20 @@ func set(cmd *cobra.Command, chain string) {
 }
 
 func get(cmd *cobra.Command, chain string) {
-	ring, err := getKeyring(chain)
+	lines, err := getKVAsEnvLines(cmd, chain)
+	if err != nil {
+		log.Fatalf("Error getting env lines: %+v", err)
+	}
+
+	fmt.Println(strings.Join(lines, "\n"))
+}
+
+func NewStore(storeType, chain string) (Store, error) {
+	return NewStandardStore(chain)
+}
+
+func getKVAsEnvLines(cmd *cobra.Command, chain string) ([]string, error) {
+	ring, err := NewStandardStore(chain)
 
 	if err != nil {
 		log.Fatalln("Unable to open keyring")
@@ -157,31 +179,67 @@ func get(cmd *cobra.Command, chain string) {
 		lines = append(lines, line)
 	}
 
-	fmt.Println(strings.Join(lines, "\n"))
+	return lines, err
+}
+
+type Store interface {
+	Keys() ([]string, error)
+	Get(string) (keyring.Item, error)
+	Set(keyring.Item) error
+	Name() string
+}
+
+type StandardStore struct {
+	keyring.Keyring
+}
+
+var StandardStoreName = "standard_store"
+
+func (s StandardStore) Name() string {
+	return StandardStoreName
+}
+
+type MetadataEncodedStore struct {
+	k keyring.Keyring
+}
+
+var MetadataEncodedStoreName = "standard_store"
+
+func (s MetadataEncodedStore) Name() string {
+	return MetadataEncodedStoreName
+}
+
+var ErrFunctionNotImplemented = errors.New("function not implemented")
+
+// Set
+// write to record then to reverse index
+// Store value as proto of k/v for recreating these
+func (s MetadataEncodedStore) Set(keyring.Item) error {
+	return ErrFunctionNotImplemented
+}
+
+// Get
+// Read from reverse index, then get record
+// Store value as proto of k/v for recreating these
+func (s MetadataEncodedStore) Get(envKey string) (keyring.Item, error) {
+	return keyring.Item{}, ErrFunctionNotImplemented
+}
+
+// TODO
+// List all keys, then perform translation in reverse index
+func (s MetadataEncodedStore) Keys() ([]string, error) {
+	return nil, ErrFunctionNotImplemented
+
 }
 
 func execute(cmd *cobra.Command, chain string, command string, commandArgs []string) {
-	ring, err := getKeyring(chain)
-
+	lines, err := getKVAsEnvLines(cmd, chain)
 	if err != nil {
-		log.Fatalln("Unable to open keyring")
+		log.Fatalf("Error getting env lines: %+v", err)
 	}
 
 	env := os.Environ()
-
-	var keys []string
-	keys, err = ring.Keys()
-	if err != nil {
-		log.Fatalf("Unable to get keys for keyring\n")
-	}
-	for _, k := range keys {
-		value, err := ring.Get(k)
-		if err != nil {
-			log.Fatalf("Unable to get key: %+v", k)
-		}
-		line := fmt.Sprintf("%s=%s", k, value.Data)
-		env = append(env, line)
-	}
+	env = append(env, lines...)
 
 	execpath, err := exec.LookPath(command)
 	if err != nil {

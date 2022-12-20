@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package chain.v1;
+
+option go_package = "github.com/zph/chain/gen/proto/go/chain/v1;chainv1";
+
+enum StorageType {
+  STORAGE_TYPE_UNSPECIFIED = 0;
+  STORAGE_TYPE_STANDARD_STORE = 1;
+  STORAGE_TYPE_METADATA_ENCODED_STORE = 2;
+};
+
+message IndexEntry {
+  string key = 1;
+  string value = 2;
+}
+
+message Storage {
+  StorageType type = 1;
+  map<string, IndexEntry> reverse_index = 2;
+}

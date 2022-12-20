@@ -62,12 +62,16 @@ var KeyringPassword = "password"
 var ChainDirKey = "dir"
 var ConfigPrefix = "chain"
 var PasswordValidationLength = "password_validation_length"
+var KeychainBackend = "keychain_backend"
+var StoreBackend = "store"
 
 func init() {
 	viper.SetDefault(KeyringServiceKey, ConfigPrefix)
 	viper.SetDefault(KeyringUserKey, ConfigPrefix)
 	viper.SetDefault(ChainDirKey, "."+ConfigPrefix)
 	viper.SetDefault(PasswordValidationLength, 20)
+	viper.SetDefault(PasswordValidationLength, 20)
+	viper.SetDefault(StoreBackend, StandardStore{})
 
 	viper.SetEnvPrefix(ConfigPrefix)
 	viper.BindEnv(KeyringServiceKey)
@@ -75,6 +79,8 @@ func init() {
 	viper.BindEnv(ChainDirKey)
 	viper.BindEnv(KeyringPassword)
 	viper.BindEnv(PasswordValidationLength)
+	viper.BindEnv(StoreBackend)
+
 	// TODO: add verbose and logging mode controls
 
 	localPath, err := filepath.Abs("./." + ConfigPrefix)
