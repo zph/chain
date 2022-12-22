@@ -15,10 +15,10 @@ import (
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	pb "github.com/zph/chain/gen/proto/go/chain/v1"
+	chainv1 "github.com/zph/chain/gen/go/chain/v1"
 )
 
-chainv1
+chainv1.
 // TODO: setup debug logging
 // TODO: use XDG config dir
 func filePath(name string) string {

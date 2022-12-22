@@ -9,5 +9,5 @@ require (
 	github.com/sethvargo/go-password v0.2.0
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/viper v1.14.0
-	google.golang.org/protobuf v1.28.1 // indirect
+	google.golang.org/protobuf v1.28.1
 )
