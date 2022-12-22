@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package chain.v1;
 
-option go_package = "github.com/zph/chain/gen/proto/go/chain/v1;chainv1";
+option go_package = "storage_service/chain/v1;chainv1";
 
 enum StorageType {
   STORAGE_TYPE_UNSPECIFIED = 0;
@@ -19,3 +19,5 @@ message Storage {
   StorageType type = 1;
   map<string, IndexEntry> reverse_index = 2;
 }
+
+service StorageService { }
