@@ -4,6 +4,14 @@ Copyright © 2022 Zander Hill <zander@xargs.io>
 package cmd
 
 import (
+	"bufio"
+	"fmt"
+	"log"
+	"os"
+	"strings"
+
+	"github.com/99designs/keyring"
+	"github.com/rotisserie/eris"
 	"github.com/spf13/cobra"
 )
 
@@ -26,10 +34,67 @@ var setCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		chain := args[0]
 
-		set(cmd, chain)
+		err := set(cmd, chain)
+		if err != nil {
+			log.Fatalf(eris.ToString(err, true))
+		}
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(setCmd)
+}
+
+func set(cmd *cobra.Command, chain string) error {
+	ring, err := NewStore(chain)
+	if err != nil {
+		return eris.Wrapf(err, "Unable to open keyring for chain: %+v", chain)
+	}
+
+	br := bufio.NewReader(os.Stdin)
+
+	info, _ := os.Stdin.Stat()
+
+	if (info.Mode() & os.ModeCharDevice) == os.ModeCharDevice {
+		// We're in interactive STDIN
+		fmt.Print("Enter KEY=value pairs and press enter on empty line to exit:\n")
+	}
+
+	lineCount := 0
+
+	for {
+		if (info.Mode() & os.ModeCharDevice) == os.ModeCharDevice {
+			// We're in interactive STDIN
+			fmt.Print(" > ")
+		}
+		line, err := br.ReadString('\n')
+		if err != nil {
+			break
+		}
+
+		line = strings.TrimSpace(line)
+
+		if len(line) == 0 {
+			break
+		}
+
+		lineCount += 1
+
+		key, val, found := strings.Cut(line, "=")
+		if !found {
+			log.Fatalln("Input format must be NAME=VALUE")
+		}
+
+		err = ring.Set(keyring.Item{
+			Key:  key,
+			Data: []byte(val),
+		})
+
+		if err != nil {
+			log.Fatalf("Unable to set key: %+v +%v", key, err)
+		}
+	}
+
+	fmt.Printf("Value(s) saved: %d\n", lineCount)
+	return nil
 }

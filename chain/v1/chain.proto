@@ -8,11 +8,14 @@ enum StorageType {
   STORAGE_TYPE_UNSPECIFIED = 0;
   STORAGE_TYPE_STANDARD_STORE = 1;
   STORAGE_TYPE_METADATA_ENCODED_STORE = 2;
+
+  // https://github.com/99designs/keyring/blob/master/keyring.go#L27-L39
+  STORAGE_TYPE_KEYCHAIN_BY_PLATFORM = 3;
 };
 
 message IndexEntry {
   string key = 1;
-  string value = 2;
+  bytes value = 2;
 }
 
 message Storage {

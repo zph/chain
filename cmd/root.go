@@ -63,7 +63,7 @@ var ChainDirKey = "dir"
 var ConfigPrefix = "chain"
 var PasswordValidationLength = "password_validation_length"
 var KeychainBackend = "keychain_backend"
-var StoreBackend = "store"
+var StoreBackendTypeName = "store"
 
 func init() {
 	viper.SetDefault(KeyringServiceKey, ConfigPrefix)
@@ -71,7 +71,7 @@ func init() {
 	viper.SetDefault(ChainDirKey, "."+ConfigPrefix)
 	viper.SetDefault(PasswordValidationLength, 20)
 	viper.SetDefault(PasswordValidationLength, 20)
-	viper.SetDefault(StoreBackend, StandardStore{})
+	viper.SetDefault(StoreBackendTypeName, 1)
 
 	viper.SetEnvPrefix(ConfigPrefix)
 	viper.BindEnv(KeyringServiceKey)
@@ -79,7 +79,7 @@ func init() {
 	viper.BindEnv(ChainDirKey)
 	viper.BindEnv(KeyringPassword)
 	viper.BindEnv(PasswordValidationLength)
-	viper.BindEnv(StoreBackend)
+	viper.BindEnv(StoreBackendTypeName)
 
 	// TODO: add verbose and logging mode controls
 

@@ -4,6 +4,10 @@ Copyright © 2022 Zander Hill <zander@xargs.io>
 package cmd
 
 import (
+	"fmt"
+	"log"
+	"strings"
+
 	"github.com/spf13/cobra"
 )
 
@@ -28,4 +32,13 @@ var getCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(getCmd)
+}
+
+func get(cmd *cobra.Command, chain string) {
+	lines, err := getKVAsEnvLines(cmd, chain)
+	if err != nil {
+		log.Fatalf("Error getting env lines: %+v", err)
+	}
+
+	fmt.Println(strings.Join(lines, "\n"))
 }
