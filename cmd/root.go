@@ -10,7 +10,6 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
-	"github.com/99designs/keyring"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -67,18 +66,18 @@ var ConfigPrefix = "chain"
 var PasswordValidationLength = "password_validation_length"
 var KeychainBackend = "keychain_backend"
 var StoreBackendTypeName = "store"
-var DebugName = "debug"
+var LogLevelName = "log_level"
 
 func init() {
-	viper.SetDefault(DebugName, false)
+	viper.SetDefault(LogLevelName, zerolog.InfoLevel)
+	viper.BindEnv(LogLevelName)
+	zerolog.TimestampFieldName = "t"
+	zerolog.LevelFieldName = "l"
+	zerolog.MessageFieldName = "m"
+
 	// UNIX Time is faster and smaller than most timestamps
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	// Default level for this example is info, unless debug flag is present
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	if viper.GetBool(DebugName) {
-		keyring.Debug = true
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
-	}
 
 	viper.SetDefault(KeyringServiceKey, ConfigPrefix)
 	viper.SetDefault(KeyringUserKey, ConfigPrefix)
@@ -94,7 +93,6 @@ func init() {
 	viper.BindEnv(KeyringPassword)
 	viper.BindEnv(PasswordValidationLength)
 	viper.BindEnv(StoreBackendTypeName)
-	viper.BindEnv(DebugName)
 
 	// TODO: add verbose and logging mode controls
 

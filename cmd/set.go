@@ -48,7 +48,7 @@ func init() {
 
 func set(cmd *cobra.Command, chain string) error {
 	ring, err := NewStore(chain)
-	log.Printf("Ring of type: %+v", ring.Name())
+	log.Debug().Str("store_type", ring.Name()).Msg("")
 	if err != nil {
 		return eris.Wrapf(err, "Unable to open keyring for chain: %+v", chain)
 	}

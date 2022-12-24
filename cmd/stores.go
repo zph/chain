@@ -25,7 +25,7 @@ type Store interface {
 func NewStore(chain string) (Store, error) {
 	storeType := viper.GetInt32(StoreBackendTypeName)
 	name := chainv1.StorageType_name[storeType]
-	log.Printf("Store type chosen: %+v and options %+v", storeType, name)
+	log.Debug().Int32("store_type", storeType).Str("store_options", name).Msg("")
 	switch name {
 	case chainv1.StorageType_STORAGE_TYPE_METADATA_ENCODED_STORE.String():
 		return NewMetadataEncodedStore(chain)
