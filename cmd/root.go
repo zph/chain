@@ -69,16 +69,9 @@ var StoreBackendTypeName = "store"
 var LogLevelName = "log_level"
 
 func init() {
-	viper.SetDefault(LogLevelName, zerolog.InfoLevel)
-	viper.BindEnv(LogLevelName)
-	zerolog.TimestampFieldName = "t"
-	zerolog.LevelFieldName = "l"
-	zerolog.MessageFieldName = "m"
+	viper.SetEnvPrefix(ConfigPrefix)
 
-	// UNIX Time is faster and smaller than most timestamps
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	// Default level for this example is info, unless debug flag is present
-
+	viper.SetDefault(LogLevelName, "info")
 	viper.SetDefault(KeyringServiceKey, ConfigPrefix)
 	viper.SetDefault(KeyringUserKey, ConfigPrefix)
 	viper.SetDefault(ChainDirKey, "."+ConfigPrefix)
@@ -86,7 +79,7 @@ func init() {
 	viper.SetDefault(PasswordValidationLength, 20)
 	viper.SetDefault(StoreBackendTypeName, 1)
 
-	viper.SetEnvPrefix(ConfigPrefix)
+	viper.BindEnv(LogLevelName)
 	viper.BindEnv(KeyringServiceKey)
 	viper.BindEnv(KeyringUserKey)
 	viper.BindEnv(ChainDirKey)
@@ -94,7 +87,18 @@ func init() {
 	viper.BindEnv(PasswordValidationLength)
 	viper.BindEnv(StoreBackendTypeName)
 
-	// TODO: add verbose and logging mode controls
+	zerolog.TimestampFieldName = "t"
+	zerolog.LevelFieldName = "l"
+	zerolog.MessageFieldName = "m"
+	// TODO: fix incorrect parsing
+	var logLevel, err = zerolog.ParseLevel(viper.GetString(LogLevelName))
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to parse log level")
+	}
+
+	zerolog.SetGlobalLevel(logLevel)
+	// UNIX Time is faster and smaller than most timestamps
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
 	localPath, err := filepath.Abs("./." + ConfigPrefix)
 	if err != nil {
