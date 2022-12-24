@@ -5,8 +5,9 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"strings"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/spf13/cobra"
 )
@@ -37,7 +38,7 @@ func init() {
 func get(cmd *cobra.Command, chain string) {
 	lines, err := getKVAsEnvLines(cmd, chain)
 	if err != nil {
-		log.Fatalf("Error getting env lines: %+v", err)
+		log.Fatal().Msgf("Error getting env lines: %+v", err)
 	}
 
 	fmt.Println(strings.Join(lines, "\n"))

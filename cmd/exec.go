@@ -4,11 +4,11 @@ Copyright © 2022 Zander Hill <zander@xargs.io>
 package cmd
 
 import (
-	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"syscall"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/spf13/cobra"
 )
@@ -41,7 +41,7 @@ func init() {
 func execute(cmd *cobra.Command, chain string, command string, commandArgs []string) {
 	lines, err := getKVAsEnvLines(cmd, chain)
 	if err != nil {
-		log.Fatalf("Error getting env lines: %+v", err)
+		log.Fatal().Msgf("Error getting env lines: %+v", err)
 	}
 
 	env := os.Environ()
@@ -49,7 +49,7 @@ func execute(cmd *cobra.Command, chain string, command string, commandArgs []str
 
 	execpath, err := exec.LookPath(command)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to find command: %s\n", command)
+		log.Fatal().Msgf("Unable to find command: %s\n", command)
 
 		cmd.Help()
 		os.Exit(1)
@@ -57,5 +57,5 @@ func execute(cmd *cobra.Command, chain string, command string, commandArgs []str
 
 	// TODO: use golang helpers for os.exec
 	err = syscall.Exec(execpath, commandArgs, env)
-	log.Fatal(err)
+	log.Fatal().Msg(err.Error())
 }

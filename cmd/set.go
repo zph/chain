@@ -6,9 +6,10 @@ package cmd
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"os"
 	"strings"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/99designs/keyring"
 	"github.com/rotisserie/eris"
@@ -36,7 +37,7 @@ var setCmd = &cobra.Command{
 
 		err := set(cmd, chain)
 		if err != nil {
-			log.Fatalf(eris.ToString(err, true))
+			log.Fatal().Msgf(eris.ToString(err, true))
 		}
 	},
 }
@@ -47,6 +48,7 @@ func init() {
 
 func set(cmd *cobra.Command, chain string) error {
 	ring, err := NewStore(chain)
+	log.Printf("Ring of type: %+v", ring.Name())
 	if err != nil {
 		return eris.Wrapf(err, "Unable to open keyring for chain: %+v", chain)
 	}
@@ -82,7 +84,7 @@ func set(cmd *cobra.Command, chain string) error {
 
 		key, val, found := strings.Cut(line, "=")
 		if !found {
-			log.Fatalln("Input format must be NAME=VALUE")
+			log.Fatal().Msg("Input format must be NAME=VALUE")
 		}
 
 		err = ring.Set(keyring.Item{
@@ -91,7 +93,7 @@ func set(cmd *cobra.Command, chain string) error {
 		})
 
 		if err != nil {
-			log.Fatalf("Unable to set key: %+v +%v", key, err)
+			log.Fatal().Msgf("Unable to set key: %+v +%v", key, err)
 		}
 	}
 

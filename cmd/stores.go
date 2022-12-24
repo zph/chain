@@ -3,7 +3,8 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"log"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/99designs/keyring"
 	"github.com/google/uuid"
@@ -42,7 +43,7 @@ type KeychainByPlatformStore struct {
 
 func NewKeychainByPlatform(chain string) (Store, error) {
 	s := KeychainByPlatformStore{}
-	namespacedChain := fmt.Sprintf("%s-%s", ConfigPrefix, chain)
+	namespacedChain := fmt.Sprintf("%s:%s", ConfigPrefix, chain)
 	// Available backends are used in descending order by Operating system
 	// which requires supplying config for many variants
 	// See: https://github.com/99designs/keyring/blob/master/keyring.go#L27-L39
@@ -134,13 +135,13 @@ func (s MetadataEncodedStore) ensureData() error {
 	if errors.Is(err, keyring.ErrKeyNotFound) {
 		idx := make(map[string]*chainv1.IndexEntry)
 		meta = chainv1.Storage{Type: chainv1.StorageType_STORAGE_TYPE_METADATA_ENCODED_STORE, ReverseIndex: idx}
-		log.Printf("Metadata after init: %+v", meta)
+		log.Debug().Msgf("Metadata after init: %+v", meta)
 	} else {
 		proto.Unmarshal(item.Data, &meta)
 	}
 	b, err := proto.Marshal(&meta)
 	if err != nil {
-		log.Fatalf("Unable to marshall proto in ensureData: %+v", err)
+		log.Fatal().Msgf("Unable to marshall proto in ensureData: %+v", err)
 	}
 	s.k.Set(keyring.Item{Key: MetaDataName, Data: b})
 	return nil
@@ -164,7 +165,7 @@ func (s MetadataEncodedStore) Set(item keyring.Item) error {
 	// Store value as proto of k/v for recreating these
 	meta, err := s.GetMeta()
 	if err != nil {
-		log.Fatalf("Unable to get reverse index %+v", err)
+		log.Fatal().Msgf("Unable to get reverse index %+v", err)
 	}
 
 	uuid := uuid.New()
@@ -175,7 +176,7 @@ func (s MetadataEncodedStore) Set(item keyring.Item) error {
 	meta.ReverseIndex[item.Key] = &chainv1.IndexEntry{Key: uuid.String(), Value: item.Data}
 	b, err := proto.Marshal(&meta)
 	if err != nil {
-		log.Fatalf("Unable to marshall reverse index %+v", err)
+		log.Fatal().Msgf("Unable to marshall reverse index %+v", err)
 	}
 
 	s.k.Set(itemWithUUID)
@@ -190,7 +191,7 @@ func (s MetadataEncodedStore) Get(envKey string) (keyring.Item, error) {
 	s.ensureData()
 	meta, err := s.GetMeta()
 	if err != nil {
-		log.Fatalf("Unable to get reverse index %+v", err)
+		log.Fatal().Msgf("Unable to get reverse index %+v", err)
 	}
 
 	reverseIndexItem := meta.ReverseIndex[envKey]
@@ -198,7 +199,7 @@ func (s MetadataEncodedStore) Get(envKey string) (keyring.Item, error) {
 
 	i, err := s.k.Get(uuidKey)
 	if errors.Is(err, keyring.ErrKeyNotFound) {
-		log.Fatalf("Unable to fetch key %+v %+v", err, i)
+		log.Fatal().Msgf("Unable to fetch key %+v %+v", err, i)
 	}
 
 	return i, nil

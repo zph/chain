@@ -3,9 +3,10 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/manifoldco/promptui"
 	"github.com/rotisserie/eris"
@@ -24,7 +25,7 @@ func filePath(name string) string {
 	} else {
 		home, err := os.UserHomeDir()
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal().Msg(err.Error())
 		}
 
 		path = filepath.Join(home, dir, name)
@@ -51,7 +52,7 @@ func getPassword(_s string) (string, error) {
 		result, err := prompt.Run()
 
 		if err != nil {
-			fmt.Printf("Prompt failed %v\n", err)
+			log.Warn().Msgf("Prompt failed %v\n", err)
 			return "", err
 		}
 

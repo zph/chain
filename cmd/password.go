@@ -5,7 +5,8 @@ package cmd
 
 import (
 	"fmt"
-	"log"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/sethvargo/go-password/password"
 	"github.com/spf13/cobra"
@@ -28,7 +29,7 @@ var passwordCmd = &cobra.Command{
 		// allowing upper and lower case letters, allowing repeat characters.
 		res, err := gen.Generate(64, 10, 10, false, true)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal().Msg(err.Error())
 		}
 		fmt.Println(res)
 	},

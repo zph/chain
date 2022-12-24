@@ -4,10 +4,13 @@ Copyright © 2022 Zander Hill <zander@xargs.io>
 package cmd
 
 import (
-	"log"
 	"os"
 	"path/filepath"
 
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+
+	"github.com/99designs/keyring"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -64,8 +67,19 @@ var ConfigPrefix = "chain"
 var PasswordValidationLength = "password_validation_length"
 var KeychainBackend = "keychain_backend"
 var StoreBackendTypeName = "store"
+var DebugName = "debug"
 
 func init() {
+	viper.SetDefault(DebugName, false)
+	// UNIX Time is faster and smaller than most timestamps
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	// Default level for this example is info, unless debug flag is present
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	if viper.GetBool(DebugName) {
+		keyring.Debug = true
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	}
+
 	viper.SetDefault(KeyringServiceKey, ConfigPrefix)
 	viper.SetDefault(KeyringUserKey, ConfigPrefix)
 	viper.SetDefault(ChainDirKey, "."+ConfigPrefix)
@@ -80,12 +94,13 @@ func init() {
 	viper.BindEnv(KeyringPassword)
 	viper.BindEnv(PasswordValidationLength)
 	viper.BindEnv(StoreBackendTypeName)
+	viper.BindEnv(DebugName)
 
 	// TODO: add verbose and logging mode controls
 
 	localPath, err := filepath.Abs("./." + ConfigPrefix)
 	if err != nil {
-		log.Panicf("Unable to parse path %+v\n", localPath)
+		log.Panic().Msgf("Unable to parse path %+v\n", localPath)
 	}
 	viper.SetConfigName(".chain")                                  // name of config file (without extension)
 	viper.AddConfigPath("$HOME/." + viper.GetString(ConfigPrefix)) // call multiple times to add many search paths

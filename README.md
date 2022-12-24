@@ -18,7 +18,8 @@ Chain works entirely locally and does not depend on any external services.
 [ ] - Store UUID filename instead of leaking information about what env vars are stored
   [ ] - Use reverse index (EnvToUUID) stored as protobuf in `INDEX` key
   [ ] - Store values as `k/v` pairs with UUID as outer key for filename
-
+[ ] - Use field based logger
+[ ] - Setup keyctl with expiring keys
 
 ## Credit
 
