@@ -6,6 +6,7 @@ package cmd
 import (
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -97,8 +98,7 @@ func init() {
 	}
 
 	zerolog.SetGlobalLevel(logLevel)
-	// UNIX Time is faster and smaller than most timestamps
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	zerolog.TimeFieldFormat = time.RFC3339
 
 	localPath, err := filepath.Abs("./." + ConfigPrefix)
 	if err != nil {
