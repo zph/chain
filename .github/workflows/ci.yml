@@ -1,8 +1,9 @@
 name: ci
 
 on:
-  tags:
-    - 'v*'
+  push:
+    tags:
+      - 'v*'
 
 jobs:
   goreleaser:
