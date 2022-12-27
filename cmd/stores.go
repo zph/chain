@@ -73,6 +73,7 @@ func (s AgeStore) Get(key string) (keyring.Item, error) {
 	if !found {
 		log.Fatal().Msg("")
 	}
+
 	recipients := s.getRecipients()
 	var otherRecipients []age.Recipient
 	for _, r := range recipients {
@@ -101,6 +102,10 @@ func (s AgeStore) Get(key string) (keyring.Item, error) {
 		log.Fatal().Msgf("Failed to read encrypted file: %v", err)
 	}
 
+	// Read and reject lines with matching first 10 chars as publicKeyPrefix
+	content, err := os.ReadFile(s.FilePath(publicKeyFile))
+	// as cleanup for expiring that key
+	// Then rekey the files with new recipients
 	fmt.Printf("File contents: %q\n", out.Bytes())
 	return keyring.Item{Key: key, Data: out.Bytes()}, nil
 }
