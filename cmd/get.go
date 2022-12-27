@@ -35,7 +35,7 @@ var getCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(getCmd)
+	RootCmd.AddCommand(getCmd)
 }
 
 func get(cmd *cobra.Command, chain string) {

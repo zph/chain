@@ -6,3 +6,6 @@ proto:
 
 run cmd:
   go run main.go {{cmd}} chainer
+
+docs:
+  go run docs/main.go

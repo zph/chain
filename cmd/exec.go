@@ -35,7 +35,7 @@ var execCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(execCmd)
+	RootCmd.AddCommand(execCmd)
 }
 
 func execute(cmd *cobra.Command, chain string, command string, commandArgs []string) {
