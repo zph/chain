@@ -66,6 +66,7 @@ Use "chain [command] --help" for more information about a command.
 -   [ ] Store values as `k/v` pairs with UUID as outer key for filename
 - [ ] Use field based logger
 - [ ] Setup keyctl with expiring keys
+- [ ] Use age store with expiring keys from initial generation of 10 pub/priv keys
 
 ## Credit
 

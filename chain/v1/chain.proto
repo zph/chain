@@ -11,6 +11,9 @@ enum StorageType {
 
   // https://github.com/99designs/keyring/blob/master/keyring.go#L27-L39
   STORAGE_TYPE_KEYCHAIN_BY_PLATFORM = 3;
+
+  // TODO: Use Age Store
+  STORAGE_TYPE_AGE_STORE = 4;
 };
 
 message IndexEntry {

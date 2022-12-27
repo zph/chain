@@ -3,6 +3,7 @@ module github.com/zph/chain
 go 1.13
 
 require (
+	filippo.io/age v1.0.0 // indirect
 	github.com/99designs/keyring v1.2.1
 	github.com/godbus/dbus v4.1.0+incompatible // indirect
 	github.com/google/uuid v1.3.0
