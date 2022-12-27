@@ -4,6 +4,7 @@ Copyright © 2022 Zander Hill <zander@xargs.io>
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -36,28 +37,31 @@ var createKeysCmd = &cobra.Command{
 			log.Fatal().Err(err).Msg("failed to parse input for amount")
 		}
 		outputPath := path.Join(filePath(chain), publicKeyFile)
+		if _, err := os.Stat(outputPath); errors.Is(err, os.ErrNotExist) {
+			err = os.MkdirAll(filePath(chain), 0700)
+			if err != nil && !os.IsExist(err) {
+				log.Fatal().Err(err).Msg("")
+			}
+			ids := createIdentities(amount)
 
-		err = os.MkdirAll(filePath(chain), 0700)
-		if err != nil && !os.IsExist(err) {
-			log.Fatal().Err(err).Msg("")
-		}
-		ids := createIdentities(amount)
+			var recipients []string
+			for _, r := range ids {
+				recipients = append(recipients, r.Recipient().String())
+			}
 
-		var recipients []string
-		for _, r := range ids {
-			recipients = append(recipients, r.Recipient().String())
-		}
+			err = setPublicKeys(recipients, outputPath)
+			if err != nil {
+				log.Fatal().Err(err).Msg("")
+			}
+			privateKeys := ""
+			for _, id := range ids {
+				privateKeys += id.Recipient().String()[:10] + ":" + id.String() + "\n"
+			}
 
-		err = setPublicKeys(recipients, outputPath)
-		if err != nil {
-			log.Fatal().Err(err).Msg("")
+			fmt.Printf("# Store these for one time use\n%s", privateKeys)
+		} else {
+			log.Fatal().Str("outputPath", outputPath).Msg("Exiting because .PUBLIC_KEY already exists. Delete and re-run")
 		}
-		privateKeys := ""
-		for _, id := range ids {
-			privateKeys += id.Recipient().String()[:10] + ":" + id.String() + "\n"
-		}
-
-		fmt.Printf("# Store these for one time use\n%s", privateKeys)
 	},
 }
 
