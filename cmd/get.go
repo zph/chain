@@ -8,8 +8,10 @@ import (
 	"strings"
 
 	"github.com/rs/zerolog/log"
+	chainv1 "github.com/zph/chain/gen/go/chain/v1"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // getCmd represents the get command
@@ -29,6 +31,7 @@ var getCmd = &cobra.Command{
 
 		get(cmd, chain)
 	},
+	PostRun: getPostRun,
 }
 
 func init() {
@@ -42,4 +45,19 @@ func get(cmd *cobra.Command, chain string) {
 	}
 
 	fmt.Println(strings.Join(lines, "\n"))
+}
+
+func getPostRun(cmd *cobra.Command, args []string) {
+	chain := args[0]
+	store, err := NewStore(chain)
+	if err != nil {
+		log.Fatal().Err(err).Msg("")
+	}
+
+	if viper.GetInt32(StoreBackendTypeName) == int32(chainv1.StorageType_STORAGE_TYPE_AGE_OTP_STORE) {
+		err = store.PostRunHook()
+		if err != nil {
+			log.Fatal().Err(err).Msg("Failed in getPostRun for AgeOTP")
+		}
+	}
 }

@@ -91,7 +91,7 @@ func init() {
 	zerolog.TimestampFieldName = "t"
 	zerolog.LevelFieldName = "l"
 	zerolog.MessageFieldName = "m"
-	// TODO: fix incorrect parsing
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	var logLevel, err = zerolog.ParseLevel(viper.GetString(LogLevelName))
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to parse log level")

@@ -37,7 +37,7 @@ var initCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal().Msgf("Unable write file %+v\n", err)
 		}
-		err = os.Chmod(configFile, 0600)
+		err = os.Chmod(configFile, secureFSPerm)
 		if err != nil {
 			log.Fatal().Msgf("Unable to set permissions on file %s error: %+v\n", configFile, err)
 		}

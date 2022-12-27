@@ -58,15 +58,17 @@ Use "chain [command] --help" for more information about a command.
 - [x] setup goreleaser in Github Actions
 - [x] Use https://github.com/99designs/keyring with JWT backend
 - [x] Remove custom behavior for setting/storing keys and use wrapper tooling
+- [x] Use field based logger
+- [x] Use age store with expiring keys from initial generation of 10 pub/priv keys
+- [x] Setup an `age` based backend to replace JOSE
 
 ## TODO
-- [ ] Setup an `age` based backend to replace JOSE
 - [ ] Store UUID filename instead of leaking information about what env vars are stored
 -   [ ] Use reverse index (EnvToUUID) stored as protobuf in `INDEX` key
 -   [ ] Store values as `k/v` pairs with UUID as outer key for filename
-- [ ] Use field based logger
 - [ ] Setup keyctl with expiring keys
-- [ ] Use age store with expiring keys from initial generation of 10 pub/priv keys
+- [ ] Generate docs from commands: https://github.com/spf13/cobra/blob/main/doc/README.md
+- [ ] Encrypt .PUBLIC_KEYS to remove threat model of someone tampering with those when re-keying
 
 ## Credit
 

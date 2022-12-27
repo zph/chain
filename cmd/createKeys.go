@@ -7,33 +7,50 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strconv"
 
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	chainv1 "github.com/zph/chain/gen/go/chain/v1"
 )
 
 // createKeysCmd represents the createKeys command
 var createKeysCmd = &cobra.Command{
-	Use:   "createKeys",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Use:   "create-keys",
+	Short: "Create keys which will be used with AGE backends",
+	Long: `
 
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
+	Args: cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
+		if !(viper.GetInt(StoreBackendTypeName) == int(chainv1.StorageType_STORAGE_TYPE_AGE_STORE) ||
+			viper.GetInt(StoreBackendTypeName) == int(chainv1.StorageType_STORAGE_TYPE_AGE_OTP_STORE)) {
+			log.Fatal().Msg("create-keys only supported for AGE backends")
+			os.Exit(2)
+		}
+
 		chain := args[0]
-		amount := 10
+		amount, err := strconv.Atoi(args[1])
+		if err != nil {
+			log.Fatal().Err(err).Msg("failed to parse input for amount")
+		}
 		outputPath := path.Join(filePath(chain), publicKeyFile)
 
-		err := os.MkdirAll(filePath(chain), 0700)
+		err = os.MkdirAll(filePath(chain), 0700)
 		if err != nil && !os.IsExist(err) {
 			log.Fatal().Err(err).Msg("")
 		}
 		ids := createIdentities(amount)
 
-		err = setPublicKeys(ids, outputPath)
+		var recipients []string
+		for _, r := range ids {
+			recipients = append(recipients, r.Recipient().String())
+		}
+
+		err = setPublicKeys(recipients, outputPath)
 		if err != nil {
 			log.Fatal().Err(err).Msg("")
 		}

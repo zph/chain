@@ -3,3 +3,6 @@ build:
 
 proto:
   buf generate
+
+run cmd:
+  go run main.go {{cmd}} chainer

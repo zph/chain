@@ -64,6 +64,8 @@ func set(cmd *cobra.Command, chain string) error {
 
 	lineCount := 0
 
+	// TODO: offer to read in keys and passwords separately to avoid printing them
+	// on screen
 	for {
 		if (info.Mode() & os.ModeCharDevice) == os.ModeCharDevice {
 			// We're in interactive STDIN

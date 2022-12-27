@@ -56,6 +56,11 @@ func getPassword(_s string) (string, error) {
 			return "", err
 		}
 
+		// Set in viper in case other parts of process require the password
+		// thus avoiding multiple requests for it
+		// In particular this is used for age-otp to expire after run
+		viper.Set(KeyringPassword, result)
+
 		return result, nil
 	} else {
 		if err := validate(p); err != nil {
