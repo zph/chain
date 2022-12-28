@@ -5,10 +5,9 @@ import (
 	chainv1 "github.com/zph/chain/gen/go/chain/v1"
 )
 
-// TODO: consider supporting other backends:
-// https://pkg.go.dev/github.com/99designs/keyring#BackendType
 func NewStandardStore(chain string) (Store, error) {
 	s := StandardStore{}
+	// https://pkg.go.dev/github.com/99designs/keyring#BackendType
 	k, err := keyring.Open(keyring.Config{
 		AllowedBackends:  []keyring.BackendType{keyring.FileBackend},
 		ServiceName:      chain,

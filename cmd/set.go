@@ -6,6 +6,7 @@ package cmd
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -53,30 +54,32 @@ func set(cmd *cobra.Command, chain string) error {
 		return eris.Wrapf(err, "Unable to open keyring for chain: %+v", chain)
 	}
 
-	br := bufio.NewReader(os.Stdin)
-
-	info, _ := os.Stdin.Stat()
-
-	if (info.Mode() & os.ModeCharDevice) == os.ModeCharDevice {
-		// We're in interactive STDIN
-		fmt.Print("Enter KEY=value pairs and press enter on empty line to exit:\n")
+	if isInteractive() {
+		return processInteractiveEntry(ring)
+	} else {
+		return processStdinEntry(ring)
 	}
+}
+
+func isInteractive() bool {
+	info, _ := os.Stdin.Stat()
+	return (info.Mode() & os.ModeCharDevice) == os.ModeCharDevice
+}
+
+func processStdinEntry(ring Store) error {
+	br := bufio.NewReader(os.Stdin)
 
 	lineCount := 0
 
-	// TODO: offer to read in keys and passwords separately to avoid printing them
-	// on screen
 	for {
-		if (info.Mode() & os.ModeCharDevice) == os.ModeCharDevice {
-			// We're in interactive STDIN
-			fmt.Print(" > ")
-		}
 		line, err := br.ReadString('\n')
-		if err != nil {
+		if (err != nil) && (err != io.EOF) {
 			break
 		}
 
-		line = strings.TrimSpace(line)
+		line = strings.TrimRight(line, "\n")
+
+		log.Debug().Str("line", line).Msg("Line")
 
 		if len(line) == 0 {
 			break
@@ -92,6 +95,40 @@ func set(cmd *cobra.Command, chain string) error {
 		err = ring.Set(keyring.Item{
 			Key:  key,
 			Data: []byte(val),
+		})
+
+		if err != nil {
+			log.Fatal().Msgf("Unable to set key: %+v +%v", key, err)
+		}
+	}
+
+	fmt.Printf("Value(s) saved: %d\n", lineCount)
+	return nil
+}
+
+func processInteractiveEntry(ring Store) error {
+	lineCount := 0
+
+	for {
+		key, err := promptForString("KEY > ")
+		if err != nil {
+			return err
+		}
+
+		if len(key) == 0 {
+			break
+		}
+
+		value, err := promptForPassword("VALUE > ")
+		if err != nil {
+			return err
+		}
+
+		lineCount += 1
+
+		err = ring.Set(keyring.Item{
+			Key:  key,
+			Data: []byte(value),
 		})
 
 		if err != nil {

@@ -14,7 +14,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-// TODO: setup debug logging
 // TODO: use XDG config dir
 func filePath(name string) string {
 	dir := viper.GetString(ChainDirKey)
@@ -70,6 +69,32 @@ func getPassword(_s string) (string, error) {
 		}
 	}
 
+}
+
+func promptForString(title string) (string, error) {
+	p := promptui.Prompt{
+		Label: title,
+	}
+	return promptForInput(p)
+}
+
+func promptForPassword(title string) (string, error) {
+	p := promptui.Prompt{
+		Label: title,
+		Mask:  '*',
+	}
+	return promptForInput(p)
+}
+
+func promptForInput(prompt promptui.Prompt) (string, error) {
+	result, err := prompt.Run()
+
+	if err != nil {
+		log.Warn().Msgf("Prompt failed %v\n", err)
+		return "", err
+	}
+
+	return result, nil
 }
 
 func getKVAsEnvLines(cmd *cobra.Command, chain string) ([]string, error) {

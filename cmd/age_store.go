@@ -126,7 +126,6 @@ func (s AgeStore) getRecipients() []age.Recipient {
 	if err != nil {
 		log.Fatal().Msgf("Failed to open private keys file: %v", err)
 	}
-	// TODO continue here on XMAS
 	recipients, err := age.ParseRecipients(publicKeys)
 	if err != nil {
 		log.Fatal().Msgf("Failed to parse public keys: %v", err)

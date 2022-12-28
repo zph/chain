@@ -30,13 +30,13 @@ CHAIN_DIR=<directory for files stored on disk, default=.chain>
 - [x] Use field based logger
 - [x] Use age store with expiring keys from initial generation of 10 pub/priv keys
 - [x] Setup an `age` based backend to replace JOSE
+- [x] Generate docs from commands: https://github.com/spf13/cobra/blob/main/doc/README.md
 
 ## TODO
 - [ ] Store UUID filename instead of leaking information about what env vars are stored
 -   [ ] Use reverse index (EnvToUUID) stored as protobuf in `INDEX` key
 -   [ ] Store values as `k/v` pairs with UUID as outer key for filename
 - [ ] Setup keyctl with expiring keys
-- [ ] Generate docs from commands: https://github.com/spf13/cobra/blob/main/doc/README.md
 - [ ] Encrypt .PUBLIC_KEYS to remove threat model of someone tampering with those when re-keying
 
 ## Credit

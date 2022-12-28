@@ -122,8 +122,6 @@ func (s MetadataEncodedStore) Get(envKey string) (keyring.Item, error) {
 	return i, nil
 }
 
-// TODO
-// List all keys, then perform translation in reverse index
 func (s MetadataEncodedStore) Keys() ([]string, error) {
 	s.ensureData()
 	return nil, ErrFunctionNotImplemented
