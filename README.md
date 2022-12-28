@@ -6,6 +6,15 @@ Inspired by and related to envchain, aws-vault, chamber.
 
 Chain works entirely locally and does not depend on any external services.
 
+## Installation
+
+Methods:
+
+1. Download from [Releases](https://github.com/zph/chain/releases) and place on $PATH
+2. Use hermit with custom source
+   1. Setup hermit for project level tooling: https://cashapp.github.io/hermit/usage/get-started/
+   2. Source: https://github.com/zph/hermit-packages
+   3. `hermit install chain`
 ## Usage
 
 See [docs](./docs/chain.md) for full commands
@@ -21,6 +30,7 @@ CHAIN_STORE=[1-5 see chain.proto for examples]
 CHAIN_DIR=<directory for files stored on disk, default=.chain>
 ```
 
+See the [proto](chain/v1/chain.proto) for which stores are available and their respective `cmd/*_store.go` and [stores](cmd/stores.go) files for implementation. They can also be seen in [proto](chain/v1/chain.proto).
 ## Changes
 - [x] goreleaser creates binary as `chain`
 - [x] setup Github Actions

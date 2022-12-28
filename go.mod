@@ -15,5 +15,6 @@ require (
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/viper v1.14.0
 	golang.org/x/sys v0.3.0 // indirect
+	golang.org/x/tools v0.4.0 // indirect
 	google.golang.org/protobuf v1.28.1
 )

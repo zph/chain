@@ -9,3 +9,9 @@ run cmd:
 
 docs:
   go run docs/main.go
+
+tag tagname:
+  git tag -a {{tagname}} -m "Release of {{tagname}}"
+
+setup:
+  go get golang.org/x/tools/cmd/godoc

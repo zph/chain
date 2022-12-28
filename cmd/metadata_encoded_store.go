@@ -12,6 +12,9 @@ import (
 	chainv1 "github.com/zph/chain/gen/go/chain/v1"
 )
 
+// Experimental and not implemented store that obscures
+// the keys as UUIDs in order to avoid leaking metadata
+// about what is stored.
 type MetadataEncodedStore struct {
 	k keyring.Keyring
 }
