@@ -10,6 +10,11 @@ import (
 	chainv1 "github.com/zph/chain/gen/go/chain/v1"
 )
 
+// TODO: consider adding re-keying option for the scenario
+// where user has 1 valid private key remaining and would
+// like to keep using the same stored secrets with N new
+// keys.
+
 // AgeStore is used for both AgeStore and AgeOTPStore
 func NewAgeOTPStore(chain string) (Store, error) {
 	s := AgeOTPStore{}

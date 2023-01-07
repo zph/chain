@@ -18,7 +18,7 @@ import (
 
 // createKeysCmd represents the createKeys command
 var createKeysCmd = &cobra.Command{
-	Use:   "create-keys",
+	Use:   "create-keys keychain keyCount",
 	Short: "Create keys which will be used with AGE backends",
 	Long: `
 	chain create-keys [keychain] [keyCount]
@@ -58,7 +58,7 @@ var createKeysCmd = &cobra.Command{
 				privateKeys += id.Recipient().String()[:10] + ":" + id.String() + "\n"
 			}
 
-			fmt.Printf("# Store these for one time use\n%s", privateKeys)
+			fmt.Printf("# Store these keys for decryption.\nIf using age-otp-store, each one will be expired upon use.\n%s\n", privateKeys)
 		} else {
 			log.Fatal().Str("outputPath", outputPath).Msg("Exiting because .PUBLIC_KEY already exists. Delete and re-run")
 		}
