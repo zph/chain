@@ -48,6 +48,9 @@ See the [proto](chain/v1/chain.proto) for which stores are available and their r
 -   [ ] Store values as `k/v` pairs with UUID as outer key for filename
 - [ ] Setup keyctl with expiring keys
 - [ ] Encrypt .PUBLIC_KEYS to remove threat model of someone tampering with those when re-keying
+- [ ] Include chain positional arg as part of config and switch to being a global flag rather than positional
+arg. Allows for better common ergonomics.
+- [ ] Setup bats testing
 
 ## Credit
 
