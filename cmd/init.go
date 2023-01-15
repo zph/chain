@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"os"
+	"path"
 
 	"github.com/rs/zerolog/log"
 
@@ -24,12 +25,14 @@ var initCmd = &cobra.Command{
 	Run: DoInit,
 }
 
+// TODO allow for different locations on filesystem
 func DoInit(cmd *cobra.Command, args []string) {
-	err := os.Mkdir("."+ConfigPrefix, 0700)
+	dir := viper.GetString(ChainDirKey)
+	err := os.Mkdir(dir, 0700)
 	if err != nil && !os.IsExist(err) {
 		log.Fatal().Msg(err.Error())
 	}
-	configFile := "." + ConfigPrefix + "/.chain.hcl"
+	configFile := path.Join(dir, ".chain.hcl")
 	// Setting one empty, which will be rejected as invalid for safety
 	viper.Set(KeyringPassword, "")
 
