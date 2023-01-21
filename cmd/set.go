@@ -33,21 +33,16 @@ var setCmd = &cobra.Command{
 	$ echo EXAMPLE_KEY="example-value" | chain set keychain-name
 	`,
 	Args: cobra.MinimumNArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		chain := args[0]
-
-		err := set(cmd, chain)
-		if err != nil {
-			log.Fatal().Msgf(eris.ToString(err, true))
-		}
-	},
+	RunE: DoSet,
 }
 
 func init() {
 	RootCmd.AddCommand(setCmd)
 }
 
-func set(cmd *cobra.Command, chain string) error {
+func DoSet(cmd *cobra.Command, args []string) error {
+	chain := args[0]
+
 	ring, err := NewStore(chain)
 	log.Debug().Str("store_type", ring.Name()).Msg("")
 	if err != nil {

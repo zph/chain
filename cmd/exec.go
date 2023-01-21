@@ -25,17 +25,19 @@ var execCmd = &cobra.Command{
 	chain exec aws-creds -- aws s3 ls...
 `,
 	Args: cobra.MinimumNArgs(2),
-	Run: func(cmd *cobra.Command, args []string) {
-		chain := args[0]
-		command := args[1]
-		commandArgs := args[2:]
+	Run:  DoExecCmd,
+}
 
-		err := execute(cmd, chain, command, commandArgs)
-		if err != nil {
-			log.Fatal().Err(err).Str("command", command).Msgf("failed to run syscall %+v with args: %+v", command, commandArgs)
-			os.Exit(1)
-		}
-	},
+func DoExecCmd(cmd *cobra.Command, args []string) {
+	chain := args[0]
+	command := args[1]
+	commandArgs := args[2:]
+
+	err := execute(cmd, chain, command, commandArgs)
+	if err != nil {
+		log.Fatal().Err(err).Str("command", command).Msgf("failed to run syscall %+v with args: %+v", command, commandArgs)
+		os.Exit(1)
+	}
 }
 
 func init() {

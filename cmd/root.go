@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"os"
+	"path"
 	"path/filepath"
 	"time"
 
@@ -71,11 +72,15 @@ var LogLevelName = "log_level"
 
 func init() {
 	viper.SetEnvPrefix(ConfigPrefix)
+	var pwd, err = os.Getwd()
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to get pwd")
+	}
 
 	viper.SetDefault(LogLevelName, "info")
 	viper.SetDefault(KeyringServiceKey, ConfigPrefix)
 	viper.SetDefault(KeyringUserKey, ConfigPrefix)
-	viper.SetDefault(ChainDirKey, "."+ConfigPrefix)
+	viper.SetDefault(ChainDirKey, path.Join(pwd, ".", ConfigPrefix))
 	viper.SetDefault(PasswordValidationLength, 20)
 	viper.SetDefault(PasswordValidationLength, 20)
 	viper.SetDefault(StoreBackendTypeName, 1)
@@ -92,8 +97,8 @@ func init() {
 	zerolog.LevelFieldName = "l"
 	zerolog.MessageFieldName = "m"
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-	var logLevel, err = zerolog.ParseLevel(viper.GetString(LogLevelName))
-	if err != nil {
+	var logLevel, err2 = zerolog.ParseLevel(viper.GetString(LogLevelName))
+	if err2 != nil {
 		log.Fatal().Err(err).Msg("failed to parse log level")
 	}
 

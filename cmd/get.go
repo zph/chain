@@ -25,20 +25,18 @@ var getCmd = &cobra.Command{
 	# Fetch aws-creds previously set using "chain set aws-creds"
 	chain get aws-creds
 `,
-	Args: cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		chain := args[0]
-
-		get(cmd, chain)
-	},
-	PostRun: getPostRun,
+	Args:    cobra.ExactArgs(1),
+	Run:     DoGet,
+	PostRun: DoGetPostRun,
 }
 
 func init() {
 	RootCmd.AddCommand(getCmd)
 }
 
-func get(cmd *cobra.Command, chain string) {
+func DoGet(cmd *cobra.Command, args []string) {
+	chain := args[0]
+
 	lines, err := getKVAsEnvLines(cmd, chain)
 	if err != nil {
 		log.Fatal().Msgf("Error getting env lines: %+v", err)
@@ -47,7 +45,7 @@ func get(cmd *cobra.Command, chain string) {
 	fmt.Println(strings.Join(lines, "\n"))
 }
 
-func getPostRun(cmd *cobra.Command, args []string) {
+func DoGetPostRun(cmd *cobra.Command, args []string) {
 	chain := args[0]
 	store, err := NewStore(chain)
 	if err != nil {
