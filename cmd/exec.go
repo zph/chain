@@ -4,8 +4,10 @@ Copyright © 2022 Zander Hill <zander@xargs.io>
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"syscall"
 
 	"github.com/rs/zerolog/log"
@@ -48,9 +50,39 @@ func execute(cmd *cobra.Command, chain string, command string, commandArgs []str
 		log.Fatal().Msgf("Error getting env lines: %+v", err)
 	}
 
-	env := os.Environ()
-	env = append(env, lines...)
+	/*
+		See https://github.com/zph/chain/issues/3
+		Convert k=v lines into {k:v} and then do a destructive
+		merge to ensure that there is only one value for each
+		key in the output set.
 
+		Otherwise, if there are two keys in a k=v\nk=v scenario
+		some shells will choose the first rather than the last
+		value of k.
+
+		By converting to a map we ensure a destructive merge
+		which prioritizes the last value rather than the original
+		value.
+	*/
+	env := os.Environ()
+
+	kvEnv := make(map[string]string)
+	for _, e := range env {
+		kv := strings.SplitN(e, "=", 1)
+		kvEnv[kv[0]] = kv[1]
+	}
+
+	for _, e := range lines {
+		kv := strings.SplitN(e, "=", 1)
+		kvEnv[kv[0]] = kv[1]
+	}
+
+	var kvLines []string
+	for k, v := range kvEnv {
+		kvLines = append(kvLines, fmt.Sprintf("%s=\"%s\"", k, v))
+	}
+
+	env = kvLines
 	argv0, err := exec.LookPath(command)
 	if err != nil {
 		log.Fatal().Msgf("Unable to find command: %s\n", command)
