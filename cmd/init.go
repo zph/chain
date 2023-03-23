@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"os"
+	"path"
 
 	"github.com/rs/zerolog/log"
 
@@ -21,27 +22,31 @@ var initCmd = &cobra.Command{
 
 	chain init
 `,
-	Run: func(cmd *cobra.Command, args []string) {
-		err := os.Mkdir("."+ConfigPrefix, 0700)
-		if err != nil && !os.IsExist(err) {
-			log.Fatal().Msg(err.Error())
-		}
-		configFile := "." + ConfigPrefix + "/.chain.hcl"
-		// Setting one empty, which will be rejected as invalid for safety
-		viper.Set(KeyringPassword, "")
+	Run: DoInit,
+}
 
-		// Removing these because they're currently not used
-		viper.Set(KeyringServiceKey, "")
-		viper.Set(KeyringUserKey, "")
-		err = viper.SafeWriteConfigAs(configFile)
-		if err != nil {
-			log.Fatal().Msgf("Unable write file %+v\n", err)
-		}
-		err = os.Chmod(configFile, secureFSPerm)
-		if err != nil {
-			log.Fatal().Msgf("Unable to set permissions on file %s error: %+v\n", configFile, err)
-		}
-	},
+// TODO allow for different locations on filesystem
+func DoInit(cmd *cobra.Command, args []string) {
+	dir := viper.GetString(ChainDirKey)
+	err := os.Mkdir(dir, 0700)
+	if err != nil && !os.IsExist(err) {
+		log.Fatal().Msg(err.Error())
+	}
+	configFile := path.Join(dir, ".chain.hcl")
+	// Setting one empty, which will be rejected as invalid for safety
+	viper.Set(KeyringPassword, "")
+
+	// Removing these because they're currently not used
+	viper.Set(KeyringServiceKey, "")
+	viper.Set(KeyringUserKey, "")
+	err = viper.SafeWriteConfigAs(configFile)
+	if err != nil {
+		log.Fatal().Msgf("Unable write file %+v\n", err)
+	}
+	err = os.Chmod(configFile, secureFSPerm)
+	if err != nil {
+		log.Fatal().Msgf("Unable to set permissions on file %s error: %+v\n", configFile, err)
+	}
 }
 
 func init() {

@@ -15,3 +15,9 @@ tag tagname:
 
 setup:
   go get golang.org/x/tools/cmd/godoc
+
+test filename:
+  ./test/bats/bin/bats {{filename}}
+
+tests:
+  ./test/bats/bin/bats test/*.bats
