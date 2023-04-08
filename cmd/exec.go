@@ -4,10 +4,8 @@ Copyright © 2022 Zander Hill <zander@xargs.io>
 package cmd
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
-	"strings"
 	"syscall"
 
 	"github.com/rs/zerolog/log"
@@ -66,21 +64,10 @@ func execute(cmd *cobra.Command, chain string, command string, commandArgs []str
 	*/
 	env := os.Environ()
 
-	kvEnv := make(map[string]string)
-	for _, e := range env {
-		kv := strings.SplitN(e, "=", 1)
-		kvEnv[kv[0]] = kv[1]
-	}
-
-	for _, e := range lines {
-		kv := strings.SplitN(e, "=", 1)
-		kvEnv[kv[0]] = kv[1]
-	}
-
-	var kvLines []string
-	for k, v := range kvEnv {
-		kvLines = append(kvLines, fmt.Sprintf("%s=\"%s\"", k, v))
-	}
+	futureMap := make(map[string]string)
+	kvEnvironment := envLinesToMap(env, futureMap)
+	kvs := envLinesToMap(lines, kvEnvironment)
+	kvLines := kvToLines(kvs)
 
 	env = kvLines
 	argv0, err := exec.LookPath(command)
@@ -97,6 +84,5 @@ func execute(cmd *cobra.Command, chain string, command string, commandArgs []str
 	argv = append(argv, commandArgs...)
 
 	log.Debug().Str("command", command).Strs("args", argv).Strs("env", env).Msg("executing syscall")
-	// TODO: use golang helpers for os.exec
 	return syscall.Exec(argv0, argv, env)
 }
