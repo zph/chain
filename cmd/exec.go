@@ -48,9 +48,28 @@ func execute(cmd *cobra.Command, chain string, command string, commandArgs []str
 		log.Fatal().Msgf("Error getting env lines: %+v", err)
 	}
 
-	env := os.Environ()
-	env = append(env, lines...)
+	/*
+		See https://github.com/zph/chain/issues/3
+		Convert k=v lines into {k:v} and then do a destructive
+		merge to ensure that there is only one value for each
+		key in the output set.
 
+		Otherwise, if there are two keys in a k=v\nk=v scenario
+		some shells will choose the first rather than the last
+		value of k.
+
+		By converting to a map we ensure a destructive merge
+		which prioritizes the last value rather than the original
+		value.
+	*/
+	env := os.Environ()
+
+	futureMap := make(map[string]string)
+	kvEnvironment := envLinesToMap(env, futureMap)
+	kvs := envLinesToMap(lines, kvEnvironment)
+	kvLines := kvToLines(kvs)
+
+	env = kvLines
 	argv0, err := exec.LookPath(command)
 	if err != nil {
 		log.Fatal().Msgf("Unable to find command: %s\n", command)
@@ -65,6 +84,5 @@ func execute(cmd *cobra.Command, chain string, command string, commandArgs []str
 	argv = append(argv, commandArgs...)
 
 	log.Debug().Str("command", command).Strs("args", argv).Strs("env", env).Msg("executing syscall")
-	// TODO: use golang helpers for os.exec
 	return syscall.Exec(argv0, argv, env)
 }

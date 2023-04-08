@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/rs/zerolog/log"
 
@@ -31,6 +32,28 @@ func filePath(name string) string {
 	}
 
 	return path
+}
+
+func envLinesToMap(lines []string, kvEnv map[string]string) map[string]string {
+	for _, e := range lines {
+		if strings.Contains(e, "=") {
+			before, after, ok := strings.Cut(e, "=")
+			if ok {
+				kvEnv[before] = after
+			}
+		}
+	}
+
+	return kvEnv
+}
+
+func kvToLines(kvs map[string]string) []string {
+	var kvLines []string
+	for k, v := range kvs {
+		kvLines = append(kvLines, fmt.Sprintf("%s=%s", k, v))
+	}
+	return kvLines
+
 }
 
 func getPassword(_s string) (string, error) {
