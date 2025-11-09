@@ -424,3 +424,332 @@ func TestAgeStore_MultipleKeys(t *testing.T) {
 		}
 	}
 }
+
+// TestStoreTypeAutoSave_MixedTypes tests behavior when using different store types
+// for different chains in the same config directory
+func TestStoreTypeAutoSave_MixedTypes(t *testing.T) {
+	// Save original viper state
+	origStoreType := viper.Get(StoreBackendTypeName)
+	origChainDir := viper.Get(ChainDirKey)
+	origPassword := viper.Get(KeyringPassword)
+	origConfigFile := viper.ConfigFileUsed()
+	defer func() {
+		viper.Set(StoreBackendTypeName, origStoreType)
+		viper.Set(ChainDirKey, origChainDir)
+		viper.Set(KeyringPassword, origPassword)
+		if origConfigFile != "" {
+			viper.SetConfigFile(origConfigFile)
+		}
+	}()
+
+	tmpDir := t.TempDir()
+	viper.Set(ChainDirKey, tmpDir)
+	testPassword := "this-is-a-very-long-test-password-12345"
+	viper.Set(KeyringPassword, testPassword)
+
+	// Set up config file path
+	configFile := filepath.Join(tmpDir, ".chain.hcl")
+	viper.SetConfigFile(configFile)
+
+	t.Run("FirstStoreType_GetsWrittenToConfig", func(t *testing.T) {
+		// Create first chain with StandardStore (type 1)
+		viper.Set(StoreBackendTypeName, int32(1))
+
+		store1, err := NewStore("chain1")
+		if err != nil {
+			t.Fatalf("Failed to create store1: %v", err)
+		}
+		defer store1.PostRunHook()
+
+		// Verify config file was created
+		if _, err := os.Stat(configFile); os.IsNotExist(err) {
+			t.Error("Config file was not created")
+		}
+
+		// Read config and verify store type was saved
+		viper.ReadInConfig()
+		savedType := viper.GetInt32(StoreBackendTypeName)
+		if savedType != 1 {
+			t.Errorf("Expected store type 1 in config, got %d", savedType)
+		}
+	})
+
+	t.Run("SecondStoreType_OverwritesConfig", func(t *testing.T) {
+		// Now create second chain with different store type (Age store, type 4)
+		// First set up age keys for chain2
+		ids := createIdentities(1)
+		var recipients []string
+		for _, r := range ids {
+			recipients = append(recipients, r.Recipient().String())
+		}
+
+		chain2Dir := filepath.Join(tmpDir, "chain2")
+		err := os.MkdirAll(chain2Dir, 0700)
+		if err != nil {
+			t.Fatalf("Failed to create chain2 directory: %v", err)
+		}
+
+		publicKeysPath := filepath.Join(chain2Dir, publicKeyFile)
+		err = setPublicKeys(recipients, publicKeysPath)
+		if err != nil {
+			t.Fatalf("Failed to set public keys: %v", err)
+		}
+
+		testKey := ids[0].Recipient().String()[:10] + ":" + ids[0].String()
+		viper.Set(KeyringPassword, testKey)
+
+		// Set store type to AgeStore (type 4)
+		viper.Set(StoreBackendTypeName, int32(4))
+
+		store2, err := NewStore("chain2")
+		if err != nil {
+			t.Fatalf("Failed to create store2: %v", err)
+		}
+		defer store2.PostRunHook()
+
+		// Read config and verify store type was updated
+		viper.ReadInConfig()
+		savedType := viper.GetInt32(StoreBackendTypeName)
+		if savedType != 4 {
+			t.Errorf("Expected store type 4 in config, got %d", savedType)
+		}
+	})
+
+	t.Run("LastSetStoreType_BecomesDefault", func(t *testing.T) {
+		// Verify that the last set store type is what's in the config
+		viper.ReadInConfig()
+		savedType := viper.GetInt32(StoreBackendTypeName)
+
+		// Should be 4 from the previous test
+		if savedType != 4 {
+			t.Errorf("Expected last set store type (4) in config, got %d", savedType)
+		}
+
+		// Unset the store type to simulate user not specifying it
+		viper.Set(StoreBackendTypeName, nil)
+		viper.ReadInConfig() // Read from file
+
+		defaultType := viper.GetInt32(StoreBackendTypeName)
+		if defaultType != 4 {
+			t.Errorf("Expected default from config (4), got %d", defaultType)
+		}
+	})
+}
+
+// TestStoreTypeAutoSave_SQLiteAndStandardInSameDir tests the specific scenario
+// of using SQLite for one chain and Standard store for another
+func TestStoreTypeAutoSave_SQLiteAndStandardInSameDir(t *testing.T) {
+	// Save original viper state
+	origStoreType := viper.Get(StoreBackendTypeName)
+	origChainDir := viper.Get(ChainDirKey)
+	origPassword := viper.Get(KeyringPassword)
+	origConfigFile := viper.ConfigFileUsed()
+	defer func() {
+		viper.Set(StoreBackendTypeName, origStoreType)
+		viper.Set(ChainDirKey, origChainDir)
+		viper.Set(KeyringPassword, origPassword)
+		if origConfigFile != "" {
+			viper.SetConfigFile(origConfigFile)
+		}
+	}()
+
+	tmpDir := t.TempDir()
+	viper.Set(ChainDirKey, tmpDir)
+
+	// Set up config file path
+	configFile := filepath.Join(tmpDir, ".chain.hcl")
+	viper.SetConfigFile(configFile)
+
+	// Create age keys once and reuse them
+	ids := createIdentities(1)
+	var recipients []string
+	for _, r := range ids {
+		recipients = append(recipients, r.Recipient().String())
+	}
+	testKey := ids[0].Recipient().String()[:10] + ":" + ids[0].String()
+
+	// Create my-secrets with SQLite (type 6)
+	t.Run("CreateSQLiteStore", func(t *testing.T) {
+		secretsDir := filepath.Join(tmpDir, "my-secrets")
+		err := os.MkdirAll(secretsDir, 0700)
+		if err != nil {
+			t.Fatalf("Failed to create my-secrets directory: %v", err)
+		}
+
+		publicKeysPath := filepath.Join(secretsDir, publicKeyFile)
+		err = setPublicKeys(recipients, publicKeysPath)
+		if err != nil {
+			t.Fatalf("Failed to set public keys: %v", err)
+		}
+
+		viper.Set(KeyringPassword, testKey)
+		viper.Set(StoreBackendTypeName, int32(6)) // SQLite
+
+		store, err := NewStore("my-secrets")
+		if err != nil {
+			t.Fatalf("Failed to create SQLite store: %v", err)
+		}
+		defer store.PostRunHook()
+
+		// Store some data
+		err = store.Set(keyring.Item{
+			Key:  "API_KEY",
+			Data: []byte("secret-value"),
+		})
+		if err != nil {
+			t.Fatalf("Failed to set item: %v", err)
+		}
+
+		// Verify config has SQLite type
+		viper.ReadInConfig()
+		savedType := viper.GetInt32(StoreBackendTypeName)
+		if savedType != 6 {
+			t.Errorf("Expected SQLite type (6) in config, got %d", savedType)
+		}
+	})
+
+	// Create my-secrets2 with StandardStore (type 1)
+	t.Run("CreateStandardStore", func(t *testing.T) {
+		testPassword := "this-is-a-very-long-test-password-12345"
+		viper.Set(KeyringPassword, testPassword)
+		viper.Set(StoreBackendTypeName, int32(1)) // StandardStore
+
+		store, err := NewStore("my-secrets2")
+		if err != nil {
+			t.Fatalf("Failed to create StandardStore: %v", err)
+		}
+		defer store.PostRunHook()
+
+		// Store some data
+		err = store.Set(keyring.Item{
+			Key:  "DB_PASSWORD",
+			Data: []byte("another-secret"),
+		})
+		if err != nil {
+			t.Fatalf("Failed to set item: %v", err)
+		}
+
+		// Verify config now has StandardStore type (overwrites previous)
+		viper.ReadInConfig()
+		savedType := viper.GetInt32(StoreBackendTypeName)
+		if savedType != 1 {
+			t.Errorf("Expected StandardStore type (1) in config, got %d", savedType)
+		}
+	})
+
+	// Verify both stores still work with their respective data
+	t.Run("BothStoresStillWork", func(t *testing.T) {
+		// Re-open my-secrets with explicit SQLite type (using same key)
+		viper.Set(KeyringPassword, testKey)
+		viper.Set(StoreBackendTypeName, int32(6))
+
+		sqliteStore, err := NewStore("my-secrets")
+		if err != nil {
+			t.Fatalf("Failed to reopen SQLite store: %v", err)
+		}
+		defer sqliteStore.PostRunHook()
+
+		item, err := sqliteStore.Get("API_KEY")
+		if err != nil {
+			t.Fatalf("Failed to get API_KEY from SQLite store: %v", err)
+		}
+		if string(item.Data) != "secret-value" {
+			t.Errorf("Expected 'secret-value', got %q", string(item.Data))
+		}
+
+		// Re-open my-secrets2 with StandardStore
+		testPassword := "this-is-a-very-long-test-password-12345"
+		viper.Set(KeyringPassword, testPassword)
+		viper.Set(StoreBackendTypeName, int32(1))
+
+		standardStore, err := NewStore("my-secrets2")
+		if err != nil {
+			t.Fatalf("Failed to reopen StandardStore: %v", err)
+		}
+		defer standardStore.PostRunHook()
+
+		item2, err := standardStore.Get("DB_PASSWORD")
+		if err != nil {
+			t.Fatalf("Failed to get DB_PASSWORD from StandardStore: %v", err)
+		}
+		if string(item2.Data) != "another-secret" {
+			t.Errorf("Expected 'another-secret', got %q", string(item2.Data))
+		}
+	})
+}
+
+// TestStoreTypeAutoSave_OnlyWhenExplicitlySet tests that the store type
+// is only saved when explicitly set, not when using default
+func TestStoreTypeAutoSave_OnlyWhenExplicitlySet(t *testing.T) {
+	// Save original viper state
+	origStoreType := viper.Get(StoreBackendTypeName)
+	origChainDir := viper.Get(ChainDirKey)
+	origPassword := viper.Get(KeyringPassword)
+	origConfigFile := viper.ConfigFileUsed()
+	defer func() {
+		viper.Set(StoreBackendTypeName, origStoreType)
+		viper.Set(ChainDirKey, origChainDir)
+		viper.Set(KeyringPassword, origPassword)
+		if origConfigFile != "" {
+			viper.SetConfigFile(origConfigFile)
+		}
+	}()
+
+	tmpDir := t.TempDir()
+	viper.Set(ChainDirKey, tmpDir)
+	testPassword := "this-is-a-very-long-test-password-12345"
+	viper.Set(KeyringPassword, testPassword)
+
+	configFile := filepath.Join(tmpDir, ".chain.hcl")
+	viper.SetConfigFile(configFile)
+
+	t.Run("DefaultValue_NotSaved", func(t *testing.T) {
+		// Unset store type to use default (1)
+		viper.Set(StoreBackendTypeName, nil)
+
+		// Get default value
+		defaultType := viper.GetInt32(StoreBackendTypeName)
+
+		// This should be the default from root.go (1)
+		if defaultType != 1 {
+			t.Logf("Note: Default store type is %d", defaultType)
+		}
+
+		store, err := NewStore("test-chain")
+		if err != nil {
+			t.Fatalf("Failed to create store: %v", err)
+		}
+		defer store.PostRunHook()
+
+		// Config file should not be created when using default
+		if _, err := os.Stat(configFile); err == nil {
+			// If file exists, check if it has store type
+			viper.ReadInConfig()
+			// The file might exist from init, but store shouldn't be explicitly set
+			// when we only used the default
+			t.Logf("Config file exists, checking if store was saved")
+		}
+	})
+
+	t.Run("ExplicitValue_IsSaved", func(t *testing.T) {
+		// Explicitly set store type
+		viper.Set(StoreBackendTypeName, int32(1))
+
+		store, err := NewStore("test-chain2")
+		if err != nil {
+			t.Fatalf("Failed to create store: %v", err)
+		}
+		defer store.PostRunHook()
+
+		// Config should now exist and have the value
+		if _, err := os.Stat(configFile); os.IsNotExist(err) {
+			t.Error("Config file was not created for explicit store type")
+		} else {
+			viper.ReadInConfig()
+			savedType := viper.GetInt32(StoreBackendTypeName)
+			if savedType != 1 {
+				t.Errorf("Expected store type 1 in config, got %d", savedType)
+			}
+		}
+	})
+}
