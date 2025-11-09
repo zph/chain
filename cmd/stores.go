@@ -40,6 +40,8 @@ func NewStore(chain string) (Store, error) {
 		return NewAgeStore(chain)
 	case chainv1.StorageType_STORAGE_TYPE_AGE_OTP_STORE.String():
 		return NewAgeOTPStore(chain)
+	case chainv1.StorageType_STORAGE_TYPE_SQLITE.String():
+		return NewSQLiteStore(chain)
 	}
 	return nil, eris.New("Store type unfound, choose from chainv1.StorageType enum")
 }

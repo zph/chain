@@ -38,7 +38,7 @@ var setCmd = &cobra.Command{
 
 		err := set(cmd, chain)
 		if err != nil {
-			log.Fatal().Msgf(eris.ToString(err, true))
+			log.Fatal().Msg(eris.ToString(err, true))
 		}
 	},
 }

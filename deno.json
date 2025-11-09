@@ -1,0 +1,10 @@
+{
+  "tasks": {
+    "test": "deno test --allow-all test/",
+    "test:watch": "deno test --allow-all --watch test/"
+  },
+  "imports": {
+    "@david/dax": "jsr:@david/dax",
+    "@std/assert": "jsr:@std/assert"
+  }
+}
