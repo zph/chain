@@ -15,6 +15,7 @@ require (
 	github.com/sethvargo/go-password v0.2.0
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/viper v1.14.0
+	golang.org/x/crypto v0.43.0
 	google.golang.org/protobuf v1.28.1
 	modernc.org/sqlite v1.40.0
 )
@@ -47,7 +48,6 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/subosito/gotenv v1.4.1 // indirect
-	golang.org/x/crypto v0.43.0 // indirect
 	golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b // indirect
 	golang.org/x/sys v0.37.0 // indirect
 	golang.org/x/term v0.36.0 // indirect

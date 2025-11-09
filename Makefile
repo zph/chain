@@ -11,7 +11,7 @@ help: ## Display this help message
 ##@ Build
 
 build: ## Build binary using goreleaser
-	goreleaser build --single-target --skip-validate --snapshot --rm-dist
+	goreleaser build --single-target --snapshot --clean
 
 proto: ## Generate protobuf code
 	buf generate
